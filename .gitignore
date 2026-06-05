@@ -1,0 +1,29 @@
+# ── Secrets & environment ──────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ── Node ───────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Build output ───────────────────────────────────────────────────────────
+dist/
+build/
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+*.log
+.run-logs/
+.tunnel-logs/
+
+# ── OS / editor junk ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Temporary attachment storage (local dev fallback) ──────────────────────
+/tmp/tmail-attachments/

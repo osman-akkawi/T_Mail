@@ -1,0 +1,10 @@
+name = "tmail-inbound-email"
+main = "worker.js"
+compatibility_date = "2026-06-05"
+
+[vars]
+TMAIL_INBOUND_WEBHOOK_URL = "https://YOUR_BACKEND_HOST/webhooks/inbound-email"
+TMAIL_MAX_RAW_EMAIL_CHARS = "100000"
+
+# Set this as a secret, not plain text:
+# wrangler secret put TMAIL_INBOUND_WEBHOOK_SECRET

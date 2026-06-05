@@ -1,0 +1,22 @@
+﻿version: "3.8"
+
+services:
+  bot:
+    build:
+      context: ./bot
+    env_file:
+      - ./bot/.env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  miniapp:
+    build:
+      context: ./miniapp
+      args:
+        VITE_API_BASE_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    depends_on:
+      - bot

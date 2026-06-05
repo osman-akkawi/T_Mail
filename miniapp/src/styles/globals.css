@@ -1,0 +1,168 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap");
+
+:root {
+  color-scheme: dark;
+
+  /* === Core Palette === */
+  --tm-bg-deep:    #070b14;
+  --tm-bg-mid:     #0b1020;
+  --tm-bg-surface: #121a2c;
+  --tm-bg-card:    rgba(18, 26, 44, 0.9);
+
+  /* === Accent Colors === */
+  --tm-blue:        #5f9cff;
+  --tm-blue-bright: #9bc0ff;
+  --tm-blue-dim:    rgba(79, 142, 247, 0.18);
+  --tm-blue-glow:   rgba(79, 142, 247, 0.28);
+  --tm-coral:       #ff7b7b;
+  --tm-coral-dim:   rgba(255, 107, 107, 0.18);
+  --tm-coral-glow:  rgba(255, 107, 107, 0.25);
+  --tm-green:       #4adea7;
+  --tm-green-dim:   rgba(52, 211, 153, 0.15);
+  --tm-amber:       #ffd166;
+  --tm-amber-dim:   rgba(251, 191, 36, 0.15);
+  --tm-purple:      #b69cff;
+  --tm-purple-dim:  rgba(167, 139, 250, 0.15);
+
+  /* === Text === */
+  --tm-text-1: #f8fbff;
+  --tm-text-2: #c6d2e8;
+  --tm-text-3: #93a4c3;
+
+  /* === Glass & Borders === */
+  --tm-border:       rgba(255, 255, 255, 0.07);
+  --tm-border-glow:  rgba(79, 142, 247, 0.4);
+  --tm-glass:        rgba(255, 255, 255, 0.035);
+  --tm-glass-hover:  rgba(255, 255, 255, 0.065);
+
+  /* === Shadows === */
+  --tm-shadow-sm: 0 2px 8px  rgba(0, 0, 0, 0.45);
+  --tm-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --tm-shadow-lg: 0 20px 64px rgba(0, 0, 0, 0.65);
+  --tm-shadow-blue: 0 8px 32px rgba(79, 142, 247, 0.22);
+
+  /* === Layout === */
+  --tm-sidebar-w: 268px;
+  --tm-topbar-h: 64px;
+
+  /* === Radii === */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+  --r-full: 9999px;
+
+  /* === Transitions === */
+  --tx-fast: 120ms ease;
+  --tx-med:  200ms ease;
+  --tx-slow: 320ms ease;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --tm-bg-deep:    #f4f7fb;
+  --tm-bg-mid:     #eaf0f8;
+  --tm-bg-surface: #ffffff;
+  --tm-bg-card:    rgba(255, 255, 255, 0.92);
+
+  --tm-blue:        #1d5fd6;
+  --tm-blue-bright: #0f49ad;
+  --tm-blue-dim:    rgba(29, 95, 214, 0.11);
+  --tm-blue-glow:   rgba(29, 95, 214, 0.18);
+  --tm-coral:       #c93434;
+  --tm-coral-dim:   rgba(201, 52, 52, 0.1);
+  --tm-coral-glow:  rgba(201, 52, 52, 0.14);
+  --tm-green:       #047857;
+  --tm-green-dim:   rgba(4, 120, 87, 0.1);
+  --tm-amber:       #a16207;
+  --tm-amber-dim:   rgba(161, 98, 7, 0.11);
+  --tm-purple:      #6d28d9;
+  --tm-purple-dim:  rgba(109, 40, 217, 0.1);
+
+  --tm-text-1: #111827;
+  --tm-text-2: #334155;
+  --tm-text-3: #64748b;
+
+  --tm-border:       rgba(15, 23, 42, 0.12);
+  --tm-border-glow:  rgba(29, 95, 214, 0.35);
+  --tm-glass:        rgba(15, 23, 42, 0.045);
+  --tm-glass-hover:  rgba(15, 23, 42, 0.075);
+
+  --tm-shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.08);
+  --tm-shadow-md: 0 10px 34px rgba(15, 23, 42, 0.12);
+  --tm-shadow-lg: 0 24px 70px rgba(15, 23, 42, 0.16);
+  --tm-shadow-blue: 0 8px 28px rgba(29, 95, 214, 0.18);
+}
+
+/* ================================================
+   RESET & BASE
+   ================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--tm-bg-deep);
+  background-image:
+    radial-gradient(ellipse 90% 55% at 15% -5%,  rgba(79, 142, 247, 0.13) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 85% 105%, rgba(167, 139, 250, 0.09) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 50%,  rgba(255, 107, 107, 0.04) 0%, transparent 60%);
+  background-attachment: fixed;
+  color: var(--tm-text-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 90% 55% at 15% -5%, rgba(29, 95, 214, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 85% 105%, rgba(109, 40, 217, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(201, 52, 52, 0.035) 0%, transparent 60%);
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  margin: 0;
+  line-height: 1.25;
+}
+
+p {
+  margin: 0;
+}
+
+::selection {
+  background: rgba(79, 142, 247, 0.38);
+  color: #fff;
+}
+
+/* ===  Custom scrollbar === */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.09);
+  border-radius: 3px;
+  transition: background var(--tx-fast);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
