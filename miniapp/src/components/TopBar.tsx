@@ -38,8 +38,8 @@ export function TopBar({
         </svg>
       </button>
 
-      <div className="brand">
-        <span className="brand-logo" aria-hidden="true">✉</span>
+      <div className="brand" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+        <img className="brand-logo" src="/logo.png" alt="T-Mail Logo" />
         <span className="brand-name">T-Mail</span>
       </div>
 

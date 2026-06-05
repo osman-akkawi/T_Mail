@@ -103,7 +103,7 @@ function LoginView(props: {
         </div>
         {/* Logo */}
         <div className="auth-logo">
-          <div className="auth-logo-icon" aria-hidden="true">✉</div>
+          <img className="auth-logo-icon" src="/logo.png" alt="T-Mail Logo" />
           <h1>T-Mail</h1>
         </div>
         {props.error && <div className="auth-error">{props.error}</div>}
@@ -196,6 +196,19 @@ export default function App() {
   const [loginBusy, setLoginBusy] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [theme, setTheme] = React.useState<ThemeMode>(() => getInitialTheme());
+  const [globalError, setGlobalError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const removeListener = api.addApiErrorListener((error) => {
+      if (
+        error.message.includes("502 Bad Gateway") ||
+        error.message.includes("Unable to reach the origin service")
+      ) {
+        setGlobalError(error.message);
+      }
+    });
+    return removeListener;
+  }, []);
 
   const isLocalHost =
     typeof window !== "undefined" &&
@@ -358,9 +371,18 @@ export default function App() {
           handleAuthSuccess(result);
           return;
         }
-      } catch (_error) {
+      } catch (error: any) {
         api.auth.clearSessionToken();
         setAuthUser(null);
+        if (
+          error instanceof Error &&
+          (error.message.includes("502 Bad Gateway") ||
+            error.message.includes("Unable to reach the origin service"))
+        ) {
+          setGlobalError(error.message);
+        } else {
+          setAuthError(error instanceof Error ? error.message : "Connection failed");
+        }
       } finally {
         setAuthLoading(false);
       }
@@ -374,6 +396,42 @@ export default function App() {
       <div className="app-loading-screen">
         <LoadingSpinner />
         <p>Connecting to T-Mail...</p>
+      </div>
+    );
+  }
+
+  if (globalError) {
+    return (
+      <div className="api-error-overlay">
+        <div className="api-error-card">
+          <div className="api-error-icon">⚠️</div>
+          <h2>502 Bad Gateway</h2>
+          <p>Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared.</p>
+          <div className="api-error-instructions">
+            To fix this, please open your Telegram bot and press <strong>/start</strong> again to wake up the server.
+          </div>
+          <div className="api-error-btn-group">
+            <button
+              type="button"
+              className="auth-secondary"
+              onClick={() => {
+                setGlobalError(null);
+                window.location.reload();
+              }}
+            >
+              🔄 Retry
+            </button>
+            <button
+              type="button"
+              className="auth-primary"
+              onClick={() => {
+                telegram.openExternal(botOpenUrl);
+              }}
+            >
+              💬 Open Telegram Bot
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

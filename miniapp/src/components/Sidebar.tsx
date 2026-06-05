@@ -32,8 +32,8 @@ const links: Array<{
 export function Sidebar({ unreadCounts, onCompose, user, isOpen, onClose, onLogout }: SidebarProps) {
   return (
     <aside className={`tmail-sidebar ${isOpen ? "open" : ""}`}>
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-icon">T</div>
+      <div className="sidebar-brand" onClick={onClose} style={{ cursor: "pointer" }}>
+        <img className="sidebar-brand-icon" src="/logo.png" alt="T-Mail Logo" />
         <span className="sidebar-brand-name">T-Mail</span>
         <button
           type="button"

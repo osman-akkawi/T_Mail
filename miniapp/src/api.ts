@@ -91,6 +91,26 @@ function parseApiEnvelope<T>(raw: string, fallbackError: string): ApiEnvelope<T>
   }
 }
 
+export type ApiErrorListener = (error: Error) => void;
+const apiErrorListeners = new Set<ApiErrorListener>();
+
+export function addApiErrorListener(listener: ApiErrorListener): () => void {
+  apiErrorListeners.add(listener);
+  return () => {
+    apiErrorListeners.delete(listener);
+  };
+}
+
+function notifyApiError(error: Error) {
+  for (const listener of apiErrorListeners) {
+    try {
+      listener(error);
+    } catch (e) {
+      console.error("Error in API error listener:", e);
+    }
+  }
+}
+
 async function request<T>(path: string, init?: ApiRequestInit): Promise<T> {
   const authToken = getAuthToken();
   const controller = new AbortController();
@@ -113,26 +133,58 @@ async function request<T>(path: string, init?: ApiRequestInit): Promise<T> {
       signal: controller.signal,
     });
     const raw = await response.text();
+
+    const isCloudflareError =
+      response.status === 502 ||
+      response.status === 504 ||
+      raw.includes("502 Bad Gateway") ||
+      raw.includes("Unable to reach the origin service") ||
+      raw.includes("cloudflared");
+
+    if (isCloudflareError) {
+      const gatewayError = new Error(
+        "502 Bad Gateway: Unable to reach the origin service. The service may be down. Please press /start in the Telegram bot again to restart it."
+      );
+      notifyApiError(gatewayError);
+      throw gatewayError;
+    }
+
     const payload = parseApiEnvelope<T>(raw, `Request failed (${response.status}).`);
     if (!response.ok || !payload.ok) {
-      throw new Error(payload.error ?? `Request failed: ${path}`);
+      const errorMsg = payload.error ?? `Request failed: ${path}`;
+      const requestError = new Error(errorMsg);
+      throw requestError;
     }
 
     return payload.data;
   } catch (error: unknown) {
+    let finalError: Error;
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Request timed out. Please try again.");
+      finalError = new Error("Request timed out. Please try again.");
+    } else if (error instanceof Error) {
+      const isConnectionError =
+        error.message.includes("Failed to fetch") ||
+        error.message.includes("Network request failed");
+      if (isConnectionError) {
+        finalError = new Error(
+          "502 Bad Gateway: Unable to reach the origin service. The service may be down. Please press /start in the Telegram bot again to restart it."
+        );
+      } else {
+        finalError = error;
+      }
+    } else {
+      finalError = new Error("Network request failed. Please check your connection.");
     }
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("Network request failed. Please check your connection.");
+
+    notifyApiError(finalError);
+    throw finalError;
   } finally {
     window.clearTimeout(timeoutId);
   }
 }
 
 export const api = {
+  addApiErrorListener,
   auth: {
     getSessionToken(): string {
       return getStoredSessionToken();
