@@ -86,6 +86,7 @@ function LoginView(props: {
   onVerifyCode: () => void;
   onResetCodeStep: () => void;
   onOpenTelegram: () => void;
+  onOpenTelegramWithParam?: (param: string) => void;
   theme: ThemeMode;
   onToggleTheme: () => void;
 }) {
@@ -106,7 +107,38 @@ function LoginView(props: {
           <img className="auth-logo-icon" src="/logo.png" alt="T-Mail Logo" />
           <h1>T-Mail</h1>
         </div>
-        {props.error && <div className="auth-error">{props.error}</div>}
+        {props.error && (
+          <div className="auth-error">
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span>{props.error}</span>
+              {props.error.includes("Account not found") && (
+                <div style={{ marginTop: "4px", fontSize: "12.5px" }}>
+                  Need to register?{" "}
+                  <button
+                    type="button"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#ffc0c0",
+                      padding: 0,
+                      font: "inherit",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                      textDecoration: "underline"
+                    }}
+                    onClick={() => {
+                      const userPart = props.loginAddress.trim().split("@")[0].toLowerCase().replace(/[^a-z0-9_]+/g, "");
+                      const startParam = userPart ? `?start=reg_${userPart}` : "";
+                      props.onOpenTelegramWithParam?.(startParam);
+                    }}
+                  >
+                    Create this address on Telegram Bot
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {canUseTelegramPrimary && (
           <button type="button" className="auth-primary" onClick={props.onTelegramLogin} disabled={props.busy}>
@@ -137,6 +169,30 @@ function LoginView(props: {
                 >
                   {props.busy ? "Sending…" : "Send Code to Telegram"}
                 </button>
+                
+                <div style={{ textAlign: "center", marginTop: "12px", fontSize: "13.5px", color: "var(--tm-text-3)" }}>
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#4f8ef7",
+                      padding: 0,
+                      font: "inherit",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      textDecoration: "underline"
+                    }}
+                    onClick={() => {
+                      const userPart = props.loginAddress.trim().split("@")[0].toLowerCase().replace(/[^a-z0-9_]+/g, "");
+                      const startParam = userPart ? `?start=reg_${userPart}` : "";
+                      props.onOpenTelegramWithParam?.(startParam);
+                    }}
+                  >
+                    Sign Up on Telegram
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="auth-step">
@@ -460,6 +516,14 @@ export default function App() {
           setAuthError(null);
         }}
         onOpenTelegram={() => telegram.openExternal(botOpenUrl)}
+        onOpenTelegramWithParam={(param) => {
+          const rawBotUsername =
+            (import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined)?.trim() ||
+            "tmail_osman_bot";
+          const botUsername = rawBotUsername.replace(/^@/, "");
+          const url = `https://t.me/${botUsername}${param}`;
+          telegram.openExternal(url);
+        }}
         theme={theme}
         onToggleTheme={() => setTheme((value) => value === "dark" ? "light" : "dark")}
       />

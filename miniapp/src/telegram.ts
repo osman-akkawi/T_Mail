@@ -1,4 +1,4 @@
-﻿import type { TelegramMiniUser } from "./types";
+import type { TelegramMiniUser } from "./types";
 
 type HapticType = "light" | "medium" | "heavy";
 
@@ -88,6 +88,6 @@ export const telegram = {
       app.openLink(url);
       return;
     }
-    window.location.assign(url);
+    window.open(url, "_blank", "noopener,noreferrer");
   },
 };
