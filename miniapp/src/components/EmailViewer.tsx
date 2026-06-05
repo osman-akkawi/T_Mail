@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { AttachmentList } from "./AttachmentList";
 import type { TMailEmail } from "../types";
 import { Avatar } from "./Avatar";
@@ -6,12 +6,15 @@ import { Avatar } from "./Avatar";
 interface EmailViewerProps {
   email: TMailEmail;
   thread: TMailEmail[];
+  folder: string;
   onReply: () => void;
   onDelete: () => void;
   onToggleStar: () => void;
+  onSpam: () => void;
+  onNotSpam: () => void;
 }
 
-export function EmailViewer({ email, thread, onReply, onDelete, onToggleStar }: EmailViewerProps) {
+export function EmailViewer({ email, thread, folder, onReply, onDelete, onToggleStar, onSpam, onNotSpam }: EmailViewerProps) {
   const uniqueThread = React.useMemo(() => {
     const seen = new Set<string>();
     return thread.filter((item) => {
@@ -42,6 +45,12 @@ export function EmailViewer({ email, thread, onReply, onDelete, onToggleStar }: 
       <div className="email-viewer-actions">
         <button type="button" className="viewer-action primary" onClick={onReply}>Reply</button>
         <button type="button" className="viewer-action" onClick={onToggleStar}>{email.starred ? "Unstar" : "Star"}</button>
+        {folder !== "spam" && (
+          <button type="button" className="viewer-action warning" onClick={onSpam}>🚫 Spam</button>
+        )}
+        {folder === "spam" && (
+          <button type="button" className="viewer-action" onClick={onNotSpam}>✅ Not Spam</button>
+        )}
         <button type="button" className="viewer-action danger" onClick={onDelete}>Delete</button>
       </div>
 

@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { api } from "../api";
 import type { EmailDraftInput, TMailEmail, TMailFolder } from "../types";
 
@@ -17,6 +17,8 @@ interface EmailStore {
   markRead: (emailId: string) => Promise<void>;
   toggleStar: (emailId: string) => Promise<void>;
   deleteEmail: (emailId: string) => Promise<void>;
+  moveToSpam: (emailId: string) => Promise<void>;
+  markNotSpam: (emailId: string) => Promise<void>;
   sendEmail: (data: EmailDraftInput) => Promise<void>;
   saveDraft: (data: EmailDraftInput) => Promise<void>;
   search: (query: string) => Promise<void>;
@@ -36,13 +38,14 @@ const emptyDraft: EmailDraftInput = {
 };
 
 function recalcUnread(emails: Record<TMailFolder, TMailEmail[]>): Record<TMailFolder, number> {
-  const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "starred"];
+  const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "starred", "spam"];
   const counts = {
     inbox: 0,
     sent: 0,
     drafts: 0,
     trash: 0,
     starred: 0,
+    spam: 0,
   };
 
   for (const folder of folders) {
@@ -60,6 +63,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     drafts: [],
     trash: [],
     starred: [],
+    spam: [],
   },
   currentEmail: null,
   unreadCounts: {
@@ -68,6 +72,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     drafts: 0,
     trash: 0,
     starred: 0,
+    spam: 0,
   },
   isComposing: false,
   composeData: emptyDraft,
@@ -86,6 +91,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
           ...nextEmails.sent,
           ...nextEmails.drafts,
           ...nextEmails.trash,
+          ...nextEmails.spam,
         ].filter((email) => email.starred);
 
         return {
@@ -132,6 +138,7 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
         ...all.sent,
         ...all.drafts,
         ...all.trash,
+        ...all.spam,
       ].filter((email) => email.starred);
       return { emails: all };
     });
@@ -143,6 +150,33 @@ export const useEmailStore = create<EmailStore>((set, get) => ({
     set((state) => {
       const nextFolder = state.emails[folder].filter((email) => email.id !== emailId);
       const all = { ...state.emails, [folder]: nextFolder };
+      return { emails: all, unreadCounts: recalcUnread(all) };
+    });
+  },
+
+  async moveToSpam(emailId) {
+    const folder = get().currentFolder;
+    await api.emails.moveToSpam(folder, emailId);
+    set((state) => {
+      const target = state.emails[folder].find((e) => e.id === emailId);
+      const nextFolder = state.emails[folder].filter((e) => e.id !== emailId);
+      const spamCopy = target ? { ...target, labels: [...(target.labels ?? []), "spam"] } : null;
+      const nextSpam = spamCopy ? [...state.emails.spam, spamCopy] : state.emails.spam;
+      const all = { ...state.emails, [folder]: nextFolder, spam: nextSpam };
+      return { emails: all, unreadCounts: recalcUnread(all) };
+    });
+  },
+
+  async markNotSpam(emailId) {
+    await api.emails.markNotSpam(emailId);
+    set((state) => {
+      const target = state.emails.spam.find((e) => e.id === emailId);
+      const nextSpam = state.emails.spam.filter((e) => e.id !== emailId);
+      const inboxCopy = target
+        ? { ...target, labels: (target.labels ?? []).filter((l) => l !== "spam"), status: "unread" as const }
+        : null;
+      const nextInbox = inboxCopy ? [inboxCopy, ...state.emails.inbox] : state.emails.inbox;
+      const all = { ...state.emails, spam: nextSpam, inbox: nextInbox };
       return { emails: all, unreadCounts: recalcUnread(all) };
     });
   },

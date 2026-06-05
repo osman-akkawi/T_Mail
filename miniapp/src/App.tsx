@@ -15,6 +15,7 @@ import SentPage from "./pages/Sent";
 import SettingsPage from "./pages/Settings";
 import StarredPage from "./pages/Starred";
 import TrashPage from "./pages/Trash";
+import SpamPage from "./pages/Spam";
 import { telegram } from "./telegram";
 import { useEmailStore } from "./store/emailStore";
 import type { TMailUser } from "./types";
@@ -441,6 +442,7 @@ export default function App() {
             <Route path="/drafts" element={<DraftsPage />} />
             <Route path="/trash" element={<TrashPage />} />
             <Route path="/starred" element={<StarredPage />} />
+            <Route path="/spam" element={<SpamPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/email/:folder/:id" element={<EmailPage />} />

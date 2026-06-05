@@ -1,12 +1,13 @@
-﻿export type TMailPlan = "free" | "pro";
+export type TMailPlan = "free" | "pro";
 export type TMailStatus = "unread" | "read" | "draft";
-export type TMailFolder = "inbox" | "sent" | "drafts" | "trash" | "starred";
+export type TMailFolder = "inbox" | "sent" | "drafts" | "trash" | "starred" | "spam";
 
 export interface TMailChannels {
   inbox: number;
   sent: number;
   drafts: number;
   trash: number;
+  spam?: number;
 }
 
 export interface TMailUser {

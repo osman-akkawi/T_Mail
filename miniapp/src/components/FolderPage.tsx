@@ -14,6 +14,7 @@ const folderIcons: Record<TMailFolder, string> = {
   drafts:  "📝",
   starred: "⭐",
   trash:   "🗑",
+  spam:    "🚫",
 };
 
 const folderEmptyIcons: Record<TMailFolder, string> = {
@@ -22,6 +23,7 @@ const folderEmptyIcons: Record<TMailFolder, string> = {
   drafts:  "📄",
   starred: "⭐",
   trash:   "🗑",
+  spam:    "✅",
 };
 
 const folderEmptyMessages: Record<TMailFolder, { title: string; description: string }> = {
@@ -30,6 +32,7 @@ const folderEmptyMessages: Record<TMailFolder, { title: string; description: str
   drafts:  { title: "No drafts saved",       description: "Start composing and save a draft to find it here." },
   starred: { title: "No starred messages",   description: "Star important emails to find them quickly." },
   trash:   { title: "Trash is empty",        description: "Deleted emails will appear here before being removed." },
+  spam:    { title: "No spam — great!",      description: "Emails you report as spam will be kept here." },
 };
 
 export function FolderPage({ folder, title }: FolderPageProps) {
@@ -42,6 +45,8 @@ export function FolderPage({ folder, title }: FolderPageProps) {
     markRead,
     toggleStar,
     deleteEmail,
+    moveToSpam,
+    markNotSpam,
   } = useEmailStore();
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
 
@@ -66,6 +71,20 @@ export function FolderPage({ folder, title }: FolderPageProps) {
     setSelected(new Set());
   };
 
+  const onBulkSpam = async () => {
+    for (const id of selectedIds) {
+      await moveToSpam(id);
+    }
+    setSelected(new Set());
+  };
+
+  const onBulkNotSpam = async () => {
+    for (const id of selectedIds) {
+      markNotSpam(id);
+    }
+    setSelected(new Set());
+  };
+
   const empty = folderEmptyMessages[folder];
 
   return (
@@ -78,6 +97,12 @@ export function FolderPage({ folder, title }: FolderPageProps) {
         {selected.size > 0 && (
           <div className="bulk-actions">
             <button type="button" onClick={() => void onBulkMarkRead()}>✓ Mark read</button>
+            {folder !== "spam" && (
+              <button type="button" onClick={() => void onBulkSpam()}>🚫 Spam</button>
+            )}
+            {folder === "spam" && (
+              <button type="button" onClick={() => void onBulkNotSpam()}>✅ Not spam</button>
+            )}
             <button type="button" onClick={() => void onBulkDelete()}>🗑 Delete</button>
           </div>
         )}

@@ -1,11 +1,11 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { EmailViewer } from "../components/EmailViewer";
 import { useEmailStore } from "../store/emailStore";
 import type { TMailEmail, TMailFolder } from "../types";
 
-const validFolders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "starred"];
+const validFolders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "starred", "spam"];
 
 function resolveFolder(value: string | undefined): TMailFolder {
   if (value && validFolders.includes(value as TMailFolder)) {
@@ -18,7 +18,7 @@ export default function EmailPage() {
   const navigate = useNavigate();
   const { folder: folderParam, id } = useParams();
   const folder = resolveFolder(folderParam);
-  const { setComposing, setComposeData, deleteEmail, toggleStar, markRead } = useEmailStore();
+  const { setComposing, setComposeData, deleteEmail, toggleStar, markRead, moveToSpam, markNotSpam } = useEmailStore();
 
   const [email, setEmail] = React.useState<TMailEmail | null>(null);
   const [thread, setThread] = React.useState<TMailEmail[]>([]);
@@ -49,6 +49,7 @@ export default function EmailPage() {
       <EmailViewer
         email={email}
         thread={thread}
+        folder={folder}
         onReply={() => {
           setComposeData({
             to: [email.from],
@@ -66,7 +67,15 @@ export default function EmailPage() {
             setEmail(fresh.email);
           });
         }}
+        onSpam={() => {
+          void moveToSpam(email.id).then(() => navigate(-1));
+        }}
+        onNotSpam={() => {
+          markNotSpam(email.id);
+          navigate("/spam");
+        }}
       />
     </section>
   );
 }
+

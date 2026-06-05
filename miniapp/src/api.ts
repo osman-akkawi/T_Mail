@@ -202,6 +202,18 @@ export const api = {
     search(query: string): Promise<{ emails: TMailEmail[] }> {
       return request<{ emails: TMailEmail[] }>(`/emails/search/query?q=${encodeURIComponent(query)}`);
     },
+    moveToSpam(folder: TMailFolder, emailId: string): Promise<{ moved: boolean; to: string }> {
+      return request<{ moved: boolean; to: string }>(
+        `/emails/${encodeURIComponent(folder)}/${encodeURIComponent(emailId)}/spam`,
+        { method: "POST" },
+      );
+    },
+    markNotSpam(emailId: string): Promise<{ moved: boolean; to: string }> {
+      return request<{ moved: boolean; to: string }>(
+        `/emails/spam/${encodeURIComponent(emailId)}/not-spam`,
+        { method: "POST" },
+      );
+    },
   },
   compose: {
     send(emailData: EmailDraftInput): Promise<{ email: TMailEmail; deliveredTo: string[] }> {

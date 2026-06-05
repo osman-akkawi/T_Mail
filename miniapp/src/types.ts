@@ -1,5 +1,5 @@
-﻿export type TMailStatus = "unread" | "read" | "draft";
-export type TMailFolder = "inbox" | "sent" | "drafts" | "trash" | "starred";
+export type TMailStatus = "unread" | "read" | "draft";
+export type TMailFolder = "inbox" | "sent" | "drafts" | "trash" | "starred" | "spam";
 
 export interface TMailAttachment {
   fileId: string;
@@ -90,6 +90,7 @@ export interface MailButlerInsights {
   actionCount: number;
   attachmentCount: number;
   draftCount: number;
+  spamCount: number;
   priority: MailButlerEmailSummary[];
   suggestedReplies: MailButlerEmailSummary[];
   digest: string[];

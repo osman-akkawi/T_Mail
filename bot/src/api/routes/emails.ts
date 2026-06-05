@@ -220,5 +220,36 @@ export function createEmailsRouter(emailService: EmailService, indexService: Mas
     }
   });
 
+  router.post("/:folder/:id/spam", async (req, res, next) => {
+    try {
+      const user = req.authUser;
+      if (!user) {
+        res.status(401).json({ ok: false, error: "Unauthorized" });
+        return;
+      }
+
+      const folder = parseFolder(req.params.folder);
+      await emailService.moveToSpam(user, folder, req.params.id);
+      res.json({ ok: true, data: { moved: true, to: "spam" } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/spam/:id/not-spam", (req, res, next) => {
+    try {
+      const user = req.authUser;
+      if (!user) {
+        res.status(401).json({ ok: false, error: "Unauthorized" });
+        return;
+      }
+
+      emailService.markNotSpam(user, req.params.id);
+      res.json({ ok: true, data: { moved: true, to: "inbox" } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   return router;
 }

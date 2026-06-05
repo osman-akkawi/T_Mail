@@ -24,6 +24,7 @@ const links: Array<{
   { label: "Sent", path: "/sent", key: "sent", icon: "SE" },
   { label: "Drafts", path: "/drafts", key: "drafts", icon: "DR" },
   { label: "Starred", path: "/starred", key: "starred", icon: "ST" },
+  { label: "Spam", path: "/spam", key: "spam", icon: "SP" },
   { label: "Trash", path: "/trash", key: "trash", icon: "TR" },
   { label: "Settings", path: "/settings", key: "settings", icon: "GE" },
 ];

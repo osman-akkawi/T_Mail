@@ -57,6 +57,7 @@ export interface MailButlerInsights {
   actionCount: number;
   attachmentCount: number;
   draftCount: number;
+  spamCount: number;
   priority: MailButlerEmailSummary[];
   suggestedReplies: MailButlerEmailSummary[];
   digest: string[];
@@ -630,6 +631,7 @@ export class EmailService {
       ...this.getFolderEmails(user.tmailAddress, "sent"),
       ...this.getFolderEmails(user.tmailAddress, "drafts"),
       ...this.getFolderEmails(user.tmailAddress, "trash"),
+      ...this.getFolderEmails(user.tmailAddress, "spam"),
     ];
 
     return all
@@ -648,6 +650,7 @@ export class EmailService {
       ...this.getFolderEmails(user.tmailAddress, "sent"),
       ...this.getFolderEmails(user.tmailAddress, "drafts"),
       ...this.getFolderEmails(user.tmailAddress, "trash"),
+      ...this.getFolderEmails(user.tmailAddress, "spam"),
     ];
 
     return all
@@ -666,6 +669,7 @@ export class EmailService {
   getMailButlerInsights(user: TMailUser): MailButlerInsights {
     const inbox = this.getFolderEmails(user.tmailAddress, "inbox");
     const drafts = this.getFolderEmails(user.tmailAddress, "drafts");
+    const spam = this.getFolderEmails(user.tmailAddress, "spam");
     const unread = inbox.filter((email) => email.status === "unread");
     const actionItems = inbox.filter((email) => this.emailNeedsAction(email));
     const withAttachments = inbox.filter((email) => email.attachments.length > 0);
@@ -698,6 +702,9 @@ export class EmailService {
       drafts.length > 0
         ? `${drafts.length} draft${drafts.length === 1 ? "" : "s"} waiting to be finished.`
         : "No drafts are waiting.",
+      spam.length > 0
+        ? `⚠️ ${spam.length} message${spam.length === 1 ? "" : "s"} in your Spam folder.`
+        : "No spam detected in your mailbox.",
     ];
 
     return {
@@ -705,6 +712,7 @@ export class EmailService {
       actionCount: actionItems.length,
       attachmentCount: withAttachments.length,
       draftCount: drafts.length,
+      spamCount: spam.length,
       priority,
       suggestedReplies,
       digest,
@@ -712,7 +720,7 @@ export class EmailService {
   }
 
   private findThreadIdByEmailId(user: TMailUser, emailId: string): string {
-    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash"];
+    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "spam"];
     for (const folder of folders) {
       const found = this.getFolderEmails(user.tmailAddress, folder).find((e) => e.id === emailId);
       if (found) {
@@ -787,6 +795,59 @@ export class EmailService {
     };
   }
 
+  /**
+   * Move an email from its current folder into the spam folder.
+   * Works in-memory (same as deleteEmail → trash).  If the user's channel
+   * doesn't have a spam channel yet we fall back to in-memory-only storage
+   * so the move still works without a Telegram channel write.
+   */
+  async moveToSpam(user: TMailUser, folder: TMailFolder, emailId: string): Promise<void> {
+    const emails = this.getFolderEmails(user.tmailAddress, folder);
+    const target = emails.find((e) => e.id === emailId);
+    if (!target) {
+      throw new NotFoundError(`Email not found: ${emailId}`);
+    }
+
+    // Remove from source folder
+    this.setFolderEmails(
+      user.tmailAddress,
+      folder,
+      emails.filter((e) => e.id !== emailId),
+    );
+
+    // Push copy to spam
+    const spamCopy: TMailEmail = {
+      ...target,
+      labels: Array.from(new Set([...(target.labels ?? []), "spam"])),
+    };
+
+    this.pushEmail(user.tmailAddress, "spam", spamCopy);
+  }
+
+  /**
+   * Move an email from spam back to inbox ("not spam" / "report not spam").
+   */
+  markNotSpam(user: TMailUser, emailId: string): void {
+    const spamEmails = this.getFolderEmails(user.tmailAddress, "spam");
+    const target = spamEmails.find((e) => e.id === emailId);
+    if (!target) {
+      throw new NotFoundError(`Email not found in spam: ${emailId}`);
+    }
+
+    this.setFolderEmails(
+      user.tmailAddress,
+      "spam",
+      spamEmails.filter((e) => e.id !== emailId),
+    );
+
+    const inboxCopy: TMailEmail = {
+      ...target,
+      labels: (target.labels ?? []).filter((l) => l !== "spam"),
+      status: "unread",
+    };
+    this.pushEmail(user.tmailAddress, "inbox", inboxCopy);
+  }
+
   calculateMailboxStorageUsed(user: TMailUser): number {
     const cacheKey = this.getMailboxCacheKey(user.tmailAddress);
     const cached = this.mailboxStorageCache.get(cacheKey);
@@ -794,7 +855,7 @@ export class EmailService {
       return cached;
     }
 
-    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash"];
+    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "spam"];
     const seenAttachmentIds = new Set<string>();
     let channelRecordTotal = 0;
 
@@ -819,7 +880,7 @@ export class EmailService {
   }
 
   private getMailboxPayloadStorageUsed(user: TMailUser): number {
-    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash"];
+    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "spam"];
     return folders.reduce((total, folder) => {
       return (
         total +

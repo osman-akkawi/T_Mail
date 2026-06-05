@@ -43,6 +43,7 @@ export default function AssistantPage() {
             <div className="assistant-stat"><span>Actions</span><strong>{insights.actionCount}</strong></div>
             <div className="assistant-stat"><span>Attachments</span><strong>{insights.attachmentCount}</strong></div>
             <div className="assistant-stat"><span>Drafts</span><strong>{insights.draftCount}</strong></div>
+            <div className="assistant-stat"><span>Spam</span><strong style={{ color: insights.spamCount > 0 ? "var(--color-danger, #e74c3c)" : undefined }}>{insights.spamCount}</strong></div>
           </div>
 
           <div className="settings-card assistant-card">
