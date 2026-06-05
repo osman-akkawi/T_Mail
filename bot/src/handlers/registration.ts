@@ -1,4 +1,4 @@
-﻿import type { TMailUser } from "../types";
+import type { TMailUser } from "../types";
 import { ConflictError } from "../errors";
 import { MasterIndexService } from "../services/index";
 
@@ -18,6 +18,13 @@ export class RegistrationHandler {
   }): Promise<TMailUser> {
     const existing = this.indexService.lookupByTelegramId(params.telegramUserId);
     if (existing) {
+      const freshName = makeDisplayName(params.firstName, params.lastName);
+      const freshUsername = params.telegramUsername ?? "";
+      if (existing.displayName !== freshName || existing.telegramUsername !== freshUsername) {
+        existing.displayName = freshName;
+        existing.telegramUsername = freshUsername;
+        await this.indexService.registerUser(existing);
+      }
       return existing;
     }
 
