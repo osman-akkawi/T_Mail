@@ -20,6 +20,7 @@ export interface TMailUser {
   plan: TMailPlan;
   storageUsed: number;
   indexMessageId?: number;
+  lastAddressChangeAt?: number;
 }
 
 export interface TMailAttachment {

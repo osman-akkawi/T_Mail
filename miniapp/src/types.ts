@@ -36,6 +36,7 @@ export interface TMailUser {
   createdAt: number;
   plan: "free" | "pro";
   storageUsed: number;
+  lastAddressChangeAt?: number;
 }
 
 export type AuthMethod = "telegram_webapp" | "telegram_otp";

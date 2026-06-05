@@ -63,7 +63,7 @@ function sessionTypeLabel(type: AuthSession["deviceType"]): string {
   }
 }
 
-export default function SettingsPage({ user }: SettingsPageProps) {
+export default function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
   const [usage, setUsage] = React.useState<StorageUsage | null>(null);
   const [usageLoading, setUsageLoading] = React.useState(true);
   const [usageError, setUsageError] = React.useState<string | null>(null);
@@ -71,6 +71,27 @@ export default function SettingsPage({ user }: SettingsPageProps) {
   const [currentSessionId, setCurrentSessionId] = React.useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = React.useState(true);
   const [sessionsError, setSessionsError] = React.useState<string | null>(null);
+
+  const [syncing, setSyncing] = React.useState(false);
+  const [syncError, setSyncError] = React.useState<string | null>(null);
+
+  const addressPrefix = user.tmailAddress.split("@")[0].toLowerCase();
+  const telegramUsername = user.telegramUsername?.toLowerCase() || "";
+  const hasDifferentUsername = telegramUsername && telegramUsername !== addressPrefix;
+
+  const handleSyncAddress = async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const res = await api.user.changeAddress();
+      onUserUpdate(res.user);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to change email address";
+      setSyncError(message);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const loadSessions = React.useCallback(async () => {
     setSessionsLoading(true);
@@ -146,6 +167,22 @@ export default function SettingsPage({ user }: SettingsPageProps) {
           <div className="settings-row"><span>Telegram</span><strong>@{user.telegramUsername || "unknown"}</strong></div>
           <div className="settings-row"><span>Plan</span><strong>{user.plan.toUpperCase()}</strong></div>
           <div className="settings-row"><span>Joined</span><strong>{new Date(user.createdAt).toLocaleDateString()}</strong></div>
+          {hasDifferentUsername && (
+            <>
+              <div className="settings-row sync-row">
+                <span>Sync Identity</span>
+                <button
+                  type="button"
+                  className="btn-sync"
+                  disabled={syncing}
+                  onClick={handleSyncAddress}
+                >
+                  {syncing ? "Syncing..." : `Change to @${user.telegramUsername}`}
+                </button>
+              </div>
+              {syncError && <p className="sync-error-msg">{syncError}</p>}
+            </>
+          )}
         </div>
 
         <div className="settings-card">

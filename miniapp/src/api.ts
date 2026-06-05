@@ -366,6 +366,11 @@ export const api = {
     storageUsage(): Promise<{ used: number; limit: number; percentage: number; unlimited: boolean }> {
       return request<{ used: number; limit: number; percentage: number; unlimited: boolean }>("/user/storage-usage");
     },
+    changeAddress(): Promise<{ user: TMailUser }> {
+      return request<{ user: TMailUser }>("/user/change-address", {
+        method: "POST",
+      });
+    },
   },
   assistant: {
     insights(): Promise<{ insights: MailButlerInsights }> {

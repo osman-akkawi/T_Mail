@@ -153,6 +153,26 @@ export class EmailService {
     this.invalidateMailboxStorage(address);
   }
 
+  migrateMailbox(oldAddress: string, newAddress: string): void {
+    const folders: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "spam"];
+    for (const folder of folders) {
+      const oldKey = folderKey(oldAddress, folder);
+      const newKey = folderKey(newAddress, folder);
+      const emails = this.emailsByFolder.get(oldKey);
+      if (emails) {
+        this.emailsByFolder.set(newKey, emails);
+        this.emailsByFolder.delete(oldKey);
+      }
+    }
+    const oldCacheKey = this.getMailboxCacheKey(oldAddress);
+    const newCacheKey = this.getMailboxCacheKey(newAddress);
+    const cachedStorage = this.mailboxStorageCache.get(oldCacheKey);
+    if (cachedStorage !== undefined) {
+      this.mailboxStorageCache.set(newCacheKey, cachedStorage);
+      this.mailboxStorageCache.delete(oldCacheKey);
+    }
+  }
+
   private pushEmail(address: string, folder: TMailFolder, email: TMailEmail): void {
     const current = this.getFolderEmails(address, folder);
     const insertAt = current.findIndex((item) => item.date < email.date);
