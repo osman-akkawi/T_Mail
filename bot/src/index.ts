@@ -92,6 +92,7 @@ async function main(): Promise<void> {
     if (snapshot) {
       indexService.rehydrateFromSnapshot(snapshot.users);
       sessionAuthService.rehydrateFromSnapshot(snapshot.sessions);
+      emailService.rehydrateFromSnapshot(snapshot.mailboxes);
     } else {
       console.log("No snapshot found — starting with empty state.");
     }
@@ -107,14 +108,16 @@ async function main(): Promise<void> {
   // trigger a snapshot save (rehydration itself doesn't call these).
   const scheduleSnapshot = (): void => {
     snapshotService.schedule({
-      version: 2,
+      version: 3,
       savedAt: Date.now(),
       users: indexService.listAllUsers(),
       sessions: sessionAuthService.listAllSessions(),
+      mailboxes: emailService.listAllMailboxes(),
     });
   };
   indexService.setStateChangeCallback(scheduleSnapshot);
   sessionAuthService.setStateChangeCallback(scheduleSnapshot);
+  emailService.setStateChangeCallback(scheduleSnapshot);
   // ──────────────────────────────────────────────────────────────────────────
 
   const registrationHandler = new RegistrationHandler(indexService);
