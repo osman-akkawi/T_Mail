@@ -8,8 +8,8 @@ function getAllowedHosts(): string[] {
     .filter(Boolean);
 
   return [
-    "karaoke-enhance-chess-infinite.trycloudflare.com",
-    ".trycloudflare.com",
+    ".vercel.app",
+    ".onrender.com",
     ...extraHosts,
   ];
 }
