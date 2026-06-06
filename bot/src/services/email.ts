@@ -41,6 +41,10 @@ const ACTION_KEYWORDS = [
   "?",
 ];
 
+const SNAPSHOT_FOLDERS: TMailFolder[] = ["inbox", "sent", "drafts", "trash", "spam"];
+
+export type MailboxSnapshot = Record<string, Partial<Record<TMailFolder, TMailEmail[]>>>;
+
 export interface MailButlerEmailSummary {
   id: string;
   folder: TMailFolder;
@@ -114,6 +118,7 @@ export class EmailService {
   private readonly maxAttachmentsPerEmail: number;
   private readonly maxAttachmentSizeBytes: number;
   private readonly maxTotalAttachmentsSizeBytes: number;
+  private onStateChange: (() => void) | null = null;
 
   constructor(
     private readonly telegramClient: TelegramClient,
@@ -151,6 +156,11 @@ export class EmailService {
     const key = folderKey(address, folder);
     this.emailsByFolder.set(key, emails);
     this.invalidateMailboxStorage(address);
+    this.onStateChange?.();
+  }
+
+  setStateChangeCallback(callback: () => void): void {
+    this.onStateChange = callback;
   }
 
   migrateMailbox(oldAddress: string, newAddress: string): void {
@@ -170,6 +180,61 @@ export class EmailService {
     if (cachedStorage !== undefined) {
       this.mailboxStorageCache.set(newCacheKey, cachedStorage);
       this.mailboxStorageCache.delete(oldCacheKey);
+    }
+    this.onStateChange?.();
+  }
+
+  listAllMailboxes(): MailboxSnapshot {
+    const snapshot: MailboxSnapshot = {};
+
+    for (const [key, emails] of this.emailsByFolder.entries()) {
+      if (emails.length === 0) {
+        continue;
+      }
+
+      const separatorIndex = key.lastIndexOf("::");
+      if (separatorIndex === -1) {
+        continue;
+      }
+
+      const address = key.slice(0, separatorIndex);
+      const folder = key.slice(separatorIndex + 2) as TMailFolder;
+      if (!SNAPSHOT_FOLDERS.includes(folder)) {
+        continue;
+      }
+
+      const mailbox = snapshot[address] ?? {};
+      mailbox[folder] = [...emails];
+      snapshot[address] = mailbox;
+    }
+
+    return snapshot;
+  }
+
+  rehydrateFromSnapshot(mailboxes: MailboxSnapshot | undefined): void {
+    if (!mailboxes) {
+      return;
+    }
+
+    let count = 0;
+    for (const [address, folders] of Object.entries(mailboxes)) {
+      for (const folder of SNAPSHOT_FOLDERS) {
+        const emails = folders[folder];
+        if (!Array.isArray(emails) || emails.length === 0) {
+          continue;
+        }
+
+        this.emailsByFolder.set(
+          folderKey(address, folder),
+          [...emails].sort((left, right) => right.date - left.date),
+        );
+        this.invalidateMailboxStorage(address);
+        count += emails.length;
+      }
+    }
+
+    if (count > 0) {
+      console.log(`Mailboxes rehydrated: ${count} email(s).`);
     }
   }
 
