@@ -41,6 +41,17 @@ function isHttpsUrl(value: string): boolean {
   }
 }
 
+function parseTelegramChatIds(value: string | undefined): number[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isSafeInteger(item) && item !== 0);
+}
+
 async function main(): Promise<void> {
   const botToken = requiredEnv("BOT_TOKEN");
   const jwtSecret = requiredEnv("JWT_SECRET");
@@ -52,6 +63,7 @@ async function main(): Promise<void> {
   const telegramWebhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET ?? "").trim();
   const telegramMenuButtonText =
     (process.env.TELEGRAM_MENU_BUTTON_TEXT ?? "Open T-Mail NEW").trim() || "Open T-Mail NEW";
+  const telegramMenuButtonChatIds = parseTelegramChatIds(process.env.TELEGRAM_MENU_BUTTON_CHAT_IDS);
   const telegramWebhookPath = telegramWebhookUrl ? normalizeWebhookPath(telegramWebhookUrl) : "";
 
   const telegramClient = new TelegramClient(botToken);
@@ -169,24 +181,36 @@ async function main(): Promise<void> {
     console.error(`Telegram command setup failed: ${message}`);
   }
 
+  const updateTelegramMenuButton = async (chatId?: number): Promise<void> => {
+    await Promise.race([
+      bot.telegram.callApi("setChatMenuButton", {
+        ...(chatId ? { chat_id: chatId } : {}),
+        menu_button: {
+          type: "web_app",
+          text: telegramMenuButtonText,
+          web_app: { url: miniAppUrl },
+        },
+      }),
+      new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error("setChatMenuButton timed out")),
+          telegramRequestTimeoutMs,
+        );
+      }),
+    ]);
+  };
+
   if (isHttpsUrl(miniAppUrl)) {
     try {
-      await Promise.race([
-        bot.telegram.callApi("setChatMenuButton", {
-          menu_button: {
-            type: "web_app",
-            text: telegramMenuButtonText,
-            web_app: { url: miniAppUrl },
-          },
-        }),
-        new Promise((_, reject) => {
-          setTimeout(
-            () => reject(new Error("setChatMenuButton timed out")),
-            telegramRequestTimeoutMs,
-          );
-        }),
-      ]);
-      console.log(`Telegram menu button updated to ${miniAppUrl}.`);
+      await updateTelegramMenuButton();
+      for (const chatId of telegramMenuButtonChatIds) {
+        await updateTelegramMenuButton(chatId);
+      }
+      const chatScopeText =
+        telegramMenuButtonChatIds.length > 0
+          ? ` and ${telegramMenuButtonChatIds.length} chat override(s)`
+          : "";
+      console.log(`Telegram menu button updated to ${miniAppUrl}${chatScopeText}.`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown setChatMenuButton failure";
