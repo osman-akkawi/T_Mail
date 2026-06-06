@@ -33,6 +33,14 @@ function normalizeWebhookPath(webhookUrl: string): string {
   }
 }
 
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch (_error) {
+    return false;
+  }
+}
+
 async function main(): Promise<void> {
   const botToken = requiredEnv("BOT_TOKEN");
   const jwtSecret = requiredEnv("JWT_SECRET");
@@ -42,6 +50,8 @@ async function main(): Promise<void> {
   const telegramRequestTimeoutMs = Number(process.env.TELEGRAM_REQUEST_TIMEOUT_MS ?? 20_000);
   const telegramWebhookUrl = (process.env.TELEGRAM_WEBHOOK_URL ?? "").trim();
   const telegramWebhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET ?? "").trim();
+  const telegramMenuButtonText =
+    (process.env.TELEGRAM_MENU_BUTTON_TEXT ?? "Open T-Mail NEW").trim() || "Open T-Mail NEW";
   const telegramWebhookPath = telegramWebhookUrl ? normalizeWebhookPath(telegramWebhookUrl) : "";
 
   const telegramClient = new TelegramClient(botToken);
@@ -157,6 +167,35 @@ async function main(): Promise<void> {
     const message =
       error instanceof Error ? error.message : "Unknown setMyCommands failure";
     console.error(`Telegram command setup failed: ${message}`);
+  }
+
+  if (isHttpsUrl(miniAppUrl)) {
+    try {
+      await Promise.race([
+        bot.telegram.callApi("setChatMenuButton", {
+          menu_button: {
+            type: "web_app",
+            text: telegramMenuButtonText,
+            web_app: { url: miniAppUrl },
+          },
+        }),
+        new Promise((_, reject) => {
+          setTimeout(
+            () => reject(new Error("setChatMenuButton timed out")),
+            telegramRequestTimeoutMs,
+          );
+        }),
+      ]);
+      console.log(`Telegram menu button updated to ${miniAppUrl}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown setChatMenuButton failure";
+      console.error(`Telegram menu button setup failed: ${message}`);
+    }
+  } else {
+    console.warn(
+      `Skipping Telegram menu button setup because MINIAPP_URL is not HTTPS: ${miniAppUrl}`,
+    );
   }
 
   const launchBotWithRetry = async (attempt: number): Promise<void> => {
