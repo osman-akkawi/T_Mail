@@ -1,6 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+interface ProcessEnv {
+  [key: string]: string | undefined;
+}
+declare const process: {
+  env: ProcessEnv;
+};
+
 function getAllowedHosts(): string[] {
   const extraHosts = (process.env.VITE_ALLOWED_HOSTS ?? "")
     .split(",")
